@@ -1,3 +1,5 @@
+import QuoteForm from "./components/QuoteForm";
+
 const phoneDisplay = "(813) 555-0148";
 const phoneHref = "tel:+18135550148";
 
@@ -98,7 +100,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="quote" className="bg-sky-800">
+        <section id="quote" className="bg-sky-800 scroll-mt-4">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-4 px-4 py-14 sm:px-6 sm:py-16">
             <h2 className="text-3xl font-semibold tracking-tight text-white">
               Request a free quote
@@ -107,12 +109,16 @@ export default function Home() {
               Tell us what you need and we will call you back with a clear
               estimate. No pressure, no surprise fees.
             </p>
-            <a
-              href={phoneHref}
-              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-white px-6 text-base font-semibold text-sky-900 transition-colors hover:bg-sky-50 sm:w-auto"
-            >
-              Call {phoneDisplay}
-            </a>
+            <QuoteForm />
+            <p className="pt-2 text-sm text-sky-200">
+              Prefer to talk now?{" "}
+              <a
+                href={phoneHref}
+                className="font-semibold text-white underline-offset-2 hover:underline"
+              >
+                Call {phoneDisplay}
+              </a>
+            </p>
           </div>
         </section>
       </main>
