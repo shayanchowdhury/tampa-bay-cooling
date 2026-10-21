@@ -22,17 +22,36 @@ export default function QuoteForm() {
     setStatus("loading");
     setErrorMessage("");
 
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedMessage = message.trim();
+
     const { error } = await supabase.from("quotes").insert({
-      name: name.trim(),
-      phone: phone.trim(),
+      name: trimmedName,
+      phone: trimmedPhone,
       service,
-      message: message.trim() || null,
+      message: trimmedMessage || null,
     });
 
     if (error) {
       setStatus("error");
       setErrorMessage(error.message || "Something went wrong. Please try again.");
       return;
+    }
+
+    try {
+      await fetch("/api/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: trimmedName,
+          phone: trimmedPhone,
+          service,
+          message: trimmedMessage,
+        }),
+      });
+    } catch {
+      // Quote is already saved; email failure should not block success.
     }
 
     setStatus("success");
