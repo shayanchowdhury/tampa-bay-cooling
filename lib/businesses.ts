@@ -8,6 +8,7 @@ export type BusinessConfig = {
     services: string[];
     greeting: string;
     notes: string;
+    notifyEmail: string;
     demo: boolean;
   };
   
@@ -23,8 +24,9 @@ export type BusinessConfig = {
       hours: "Hours are not specified.",
       services: ["AC Repair", "Installation", "Maintenance"],
       greeting:
-        "Hi! Ask me about AC repair, installation, or maintenance, or tell me what you need and a technician will follow up.",
+        "Hi! I'm an AI assistant for Tampa Bay Cooling. Ask me about AC repair, installation, or maintenance, or tell me what you need and a technician will follow up.",
       notes: "This is a fictional demo company.",
+      notifyEmail: "",
       demo: true,
     },
     "bay-plumbing": {
@@ -36,8 +38,9 @@ export type BusinessConfig = {
       hours: "Open Monday to Friday, 8 AM to 5 PM.",
       services: ["Leak Repair", "Water Heaters", "Drain Cleaning", "Repiping"],
       greeting:
-        "Hi! I can answer questions about leaks, water heaters, and drains, or take your details so someone can follow up.",
+        "Hi! I'm an AI assistant for Bay Plumbing Co. I can answer questions about leaks, water heaters, and drains, or take your details so someone can follow up.",
       notes: "This is a fictional demo company.",
+      notifyEmail: "",
       demo: true,
     },
   };

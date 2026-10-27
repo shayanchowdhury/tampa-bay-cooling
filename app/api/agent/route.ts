@@ -81,7 +81,7 @@ async function saveLead(input: unknown, b: BusinessConfig): Promise<string> {
 
   try {
     const apiKey = process.env.RESEND_API_KEY;
-    const notifyEmail = process.env.NOTIFY_EMAIL;
+    const notifyEmail = b.notifyEmail || process.env.NOTIFY_EMAIL;
     if (apiKey && notifyEmail) {
       const resend = new Resend(apiKey);
       const { error: emailError } = await resend.emails.send({
