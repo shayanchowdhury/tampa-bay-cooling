@@ -1,14 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { getBusiness } from "../../lib/businesses";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-const GREETING =
-  "Hi! Ask me about AC repair, installation, or maintenance, or tell me what you need and a technician will follow up.";
-const FALLBACK = "Sorry, something went wrong. Please call us instead.";
-
-export default function ChatWidget() {
+export default function ChatWidget({ businessId }: { businessId?: string }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -19,7 +16,12 @@ export default function ChatWidget() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open, loading]);
 
-  async function handleSend(event: FormEvent<HTMLFormElement>) {
+  const business = getBusiness(businessId);
+  if (!business) return null;
+
+  const fallback = `Sorry, something went wrong. Please call us at ${business.phone}.`;
+
+  const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
@@ -33,28 +35,28 @@ export default function ChatWidget() {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, businessId: business.id }),
       });
       const data = await res.json();
-      const reply = res.ok && typeof data.reply === "string" ? data.reply : FALLBACK;
+      const reply = res.ok && typeof data.reply === "string" ? data.reply : fallback;
       setMessages([...next, { role: "assistant", content: reply }]);
     } catch {
-      setMessages([...next, { role: "assistant", content: FALLBACK }]);
+      setMessages([...next, { role: "assistant", content: fallback }]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
       {open && (
         <div className="flex h-96 w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="bg-sky-800 px-4 py-3 text-sm font-semibold text-white">
-            Chat with us
+            Chat with {business.name}
           </div>
           <div className="flex-1 space-y-2 overflow-y-auto p-3 text-sm">
             <div className="max-w-[85%] rounded-xl bg-slate-100 px-3 py-2 text-slate-800">
-              {GREETING}
+              {business.greeting}
             </div>
             {messages.map((m, i) => (
               <div
