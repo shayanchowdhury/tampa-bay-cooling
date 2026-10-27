@@ -1,4 +1,5 @@
 import QuoteForm from "./components/QuoteForm";
+import ChatWidget from "./components/ChatWidget";
 
 const phoneDisplay = "(813) 555-0148";
 const phoneHref = "tel:+18135550148";
@@ -110,6 +111,7 @@ export default function Home() {
               estimate. No pressure, no surprise fees.
             </p>
             <QuoteForm />
+            <ChatWidget />
             <p className="pt-2 text-sm text-sky-200">
               Prefer to talk now?{" "}
               <a
