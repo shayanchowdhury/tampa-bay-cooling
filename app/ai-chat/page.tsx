@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "AI Chat Assistants for Local Service Businesses",
   description:
-    "An AI assistant on your website that answers customer questions 24/7, collects their details and emails you the lead instantly.",
+    "An AI assistant on your website that answers customer questions 24/7, collects their details, books appointment requests and emails you the lead instantly.",
 };
 
 const steps = [
@@ -12,12 +12,12 @@ const steps = [
     text: "The assistant answers questions about your services, hours and area, day or night.",
   },
   {
-    title: "It collects the lead",
-    text: "It asks for their name, phone number and the job they need, one question at a time.",
+    title: "It collects the lead or the booking",
+    text: "It asks for their name, phone number and the job they need, one question at a time. Customers can also ask for an appointment time.",
   },
   {
     title: "You get the email",
-    text: "The lead lands in your inbox right away, scored hot, warm or cold with a one-line summary.",
+    text: "The lead or booking request lands in your inbox right away, with a one-line summary so you know who to call first.",
   },
 ];
 
@@ -39,6 +39,7 @@ const tiers = [
     days: "7 days",
     points: [
       "Everything in Starter",
+      "Customers can request appointment times",
       "Every lead scored hot, warm or cold",
       "One-sentence summary of each lead",
       "2 revisions",
@@ -72,7 +73,8 @@ export default function AiChatPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
           I build an AI assistant for your website that answers customer questions 24/7,
-          collects their details and emails you the lead the moment they finish chatting.
+          collects their details, takes appointment requests and emails you the moment they
+          finish chatting.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
@@ -134,8 +136,8 @@ export default function AiChatPage() {
             ))}
           </div>
           <p className="mt-6 text-center text-sm text-slate-500">
-            The assistant always tells customers it is an AI. Works on any site that lets you add a
-            small code snippet.
+            The assistant always tells customers it is an AI. Appointment times are requests that
+            your team confirms by phone. Works on any site that lets you add a small code snippet.
           </p>
         </div>
       </section>
