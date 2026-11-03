@@ -31,7 +31,9 @@ function buildSystemPrompt(b: BusinessConfig): string {
         "When someone wants a quote or service, ask for their name, phone number, and which service they need, one question at a time. Don't ask them to re-confirm details they already gave.",
         "Once you have all three, call the save_lead tool exactly once. Never call it before you have all three. If the visitor was already told someone will follow up, don't call it again unless they give new details.",
         "When you call save_lead, also set score and summary. score is hot if the visitor needs service urgently or soon (emergency, leak, no AC or heat, wants someone today or this week), warm if they are interested but vague or only asking about price, and cold if the request is unclear or looks like spam. summary is one plain sentence describing what they need.",
-        "After it succeeds, tell them someone will follow up, without promising a specific time.",
+        "If the visitor wants to book or schedule an appointment, ask for their name, phone number, which service they need, and the day and time they prefer, one question at a time. Once you have all four, call the book_appointment tool exactly once. Use save_lead instead when they only want a quote or have a question.",
+        "A booking is a request, not a confirmed slot. After book_appointment succeeds, tell them the team will call to confirm the time. Never say the appointment is confirmed.",
+        "After a tool succeeds, tell them someone will follow up, without promising a specific time.",
         "Keep every reply under three short sentences.",
     ].join("\n");
 }
@@ -54,10 +56,48 @@ function buildTools(b: BusinessConfig): Anthropic.Tool[] {
                 required: ["name", "phone", "service", "score", "summary"],
             },
         },
+        {
+            name: "book_appointment",
+            description:
+                "Record an appointment request. The team will call the customer to confirm the time.",
+            input_schema: {
+                type: "object",
+                properties: {
+                    name: { type: "string" },
+                    phone: { type: "string" },
+                    service: { type: "string", enum: b.services },
+                    preferred_time: {
+                        type: "string",
+                        description: "The day and time the customer wants, in their own words.",
+                    },
+                    notes: { type: "string", description: "Optional short note about the visit." },
+                },
+                required: ["name", "phone", "service", "preferred_time"],
+            },
+        },
     ];
 }
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+async function notifyOwner(b: BusinessConfig, subject: string, lines: string[]) {
+    try {
+        const apiKey = process.env.RESEND_API_KEY;
+        const notifyEmail = b.notifyEmail || process.env.NOTIFY_EMAIL;
+        if (apiKey && notifyEmail) {
+            const resend = new Resend(apiKey);
+            const { error: emailError } = await resend.emails.send({
+                from: "onboarding@resend.dev",
+                to: notifyEmail,
+                subject,
+                text: lines.join("\n"),
+            });
+            if (emailError) console.error("Email error:", emailError.message);
+        }
+    } catch {
+        console.error("Email failed");
+    }
+}
 
 async function saveLead(input: unknown, b: BusinessConfig): Promise<string> {
     const data = (input ?? {}) as Record<string, unknown>;
@@ -85,34 +125,61 @@ async function saveLead(input: unknown, b: BusinessConfig): Promise<string> {
         return "Could not save the lead. Tell the visitor to call the business instead.";
     }
 
-    try {
-        const apiKey = process.env.RESEND_API_KEY;
-        const notifyEmail = b.notifyEmail || process.env.NOTIFY_EMAIL;
-        if (apiKey && notifyEmail) {
-            const resend = new Resend(apiKey);
-            const { error: emailError } = await resend.emails.send({
-                from: "onboarding@resend.dev",
-                to: notifyEmail,
-                subject: `New ${score.toUpperCase()} chat lead (${b.name}): ${service}`,
-                text: [
-                    `Business: ${b.name}`,
-                    `Score: ${score.toUpperCase()}`,
-                    `Summary: ${summary || "(none)"}`,
-                    "",
-                    `Name: ${name}`,
-                    `Phone: ${phone}`,
-                    `Service: ${service}`,
-                    `Message: ${note || "(none)"}`,
-                    "Source: website chat",
-                ].join("\n"),
-            });
-            if (emailError) console.error("Lead email error:", emailError.message);
-        }
-    } catch {
-        console.error("Lead email failed");
-    }
+    await notifyOwner(b, `New ${score.toUpperCase()} chat lead (${b.name}): ${service}`, [
+        `Business: ${b.name}`,
+        `Score: ${score.toUpperCase()}`,
+        `Summary: ${summary || "(none)"}`,
+        "",
+        `Name: ${name}`,
+        `Phone: ${phone}`,
+        `Service: ${service}`,
+        `Message: ${note || "(none)"}`,
+        "Source: website chat",
+    ]);
 
     return "Lead saved. Tell the visitor someone will follow up.";
+}
+
+async function saveBooking(input: unknown, b: BusinessConfig): Promise<string> {
+    const data = (input ?? {}) as Record<string, unknown>;
+    const name = typeof data.name === "string" ? data.name.trim().slice(0, 100) : "";
+    const phone = typeof data.phone === "string" ? data.phone.trim().slice(0, 30) : "";
+    const service = typeof data.service === "string" ? data.service : "";
+    const preferredTime =
+        typeof data.preferred_time === "string" ? data.preferred_time.trim().slice(0, 100) : "";
+    const note = typeof data.notes === "string" ? data.notes.trim().slice(0, 500) : "";
+
+    if (!name || !phone || !preferredTime || !b.services.includes(service)) {
+        return "Missing or invalid details. Ask the visitor for what is missing.";
+    }
+
+    const { error } = await supabase.from("bookings").insert({
+        business_id: b.id,
+        name,
+        phone,
+        service,
+        preferred_time: preferredTime,
+        notes: note || null,
+    });
+    if (error) {
+        console.error("Booking save error:", error.message);
+        return "Could not save the booking. Tell the visitor to call the business instead.";
+    }
+
+    await notifyOwner(b, `New BOOKING request (${b.name}): ${service}, ${preferredTime}`, [
+        `Business: ${b.name}`,
+        `Preferred time: ${preferredTime}`,
+        "",
+        `Name: ${name}`,
+        `Phone: ${phone}`,
+        `Service: ${service}`,
+        `Notes: ${note || "(none)"}`,
+        "Source: website chat",
+        "",
+        "Call the customer to confirm the time.",
+    ]);
+
+    return "Booking request saved. Tell the visitor the team will call to confirm the time. Do not say it is confirmed.";
 }
 
 export async function POST(request: Request) {
@@ -173,8 +240,9 @@ export async function POST(request: Request) {
             );
             const results: Anthropic.ToolResultBlockParam[] = [];
             for (const tu of toolUses) {
-                const output =
-                    tu.name === "save_lead" ? await saveLead(tu.input, business) : "Unknown tool.";
+                let output = "Unknown tool.";
+                if (tu.name === "save_lead") output = await saveLead(tu.input, business);
+                else if (tu.name === "book_appointment") output = await saveBooking(tu.input, business);
                 results.push({ type: "tool_result", tool_use_id: tu.id, content: output });
             }
             response = await client.messages.create({
