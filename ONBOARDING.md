@@ -11,3 +11,12 @@
 7. Test once on the client's live site, then ask for the review.
 
 Before the first paid client: confirm Vercel Hobby terms for commercial use (or move to Pro), and decide on a domain for Resend.
+
+
+## Booking requests
+
+Every client chat can take appointment requests. They save to the Supabase `bookings` table (business_id column tells you which client) and email the owner with the subject "New BOOKING request".
+
+- Tell the client a booking is a request, not a confirmed slot. They call the customer to confirm the time.
+- Include booking in the Standard and Advanced tiers. Starter is lead capture only.
+- Until a Resend domain is verified, forward booking emails to the client yourself, same as leads.
