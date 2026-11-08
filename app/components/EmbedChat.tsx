@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getBusiness } from "../../lib/businesses";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export default function EmbedChat({ businessId }: { businessId: string }) {
-  const business = getBusiness(businessId);
+type EmbedBusiness = {
+  id: string;
+  name: string;
+  greeting: string;
+  phone: string;
+};
+
+export default function EmbedChat({ business }: { business: EmbedBusiness }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,16 +21,12 @@ export default function EmbedChat({ businessId }: { businessId: string }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  if (!business) {
-    return <div className="p-4 text-sm text-slate-600">Chat unavailable.</div>;
-  }
-
   const fallback = `Sorry, something went wrong. Please call us at ${business.phone}.`;
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading || !business) return;
+    if (!text || loading) return;
 
     const next: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(next);
@@ -85,6 +86,7 @@ export default function EmbedChat({ businessId }: { businessId: string }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
+          maxLength={500}
           className="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm outline-none focus:border-sky-900"
         />
         <button

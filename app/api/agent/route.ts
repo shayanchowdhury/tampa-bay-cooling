@@ -2,7 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { supabase } from "../../../lib/supabase";
-import { getBusiness, type BusinessConfig } from "../../../lib/businesses";
+import type { BusinessConfig } from "../../../lib/businesses";
+import { getBusinessAsync } from "../../../lib/business-store";
 
 const client = new Anthropic();
 
@@ -199,7 +200,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid request." }, { status: 400 });
     }
 
-    const business = getBusiness(body.businessId);
+    const business = await getBusinessAsync(body.businessId);
     if (!business) {
         return NextResponse.json({ error: "Unknown business." }, { status: 400 });
     }

@@ -111,7 +111,14 @@ export default function Home() {
               estimate. No pressure, no surprise fees.
             </p>
             <QuoteForm />
-            <ChatWidget />
+            <ChatWidget
+  business={{
+    id: "tampa-bay-cooling",
+    name: "Tampa Bay Cooling",
+    greeting: "Hello! How can I help you today?",
+    phone: phoneDisplay,
+  }}
+/>
             <p className="pt-2 text-sm text-sky-200">
               Prefer to talk now?{" "}
               <a

@@ -1,11 +1,17 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { getBusiness } from "../../lib/businesses";
 
 type Message = { role: "user" | "assistant"; content: string };
 
-export default function ChatWidget({ businessId }: { businessId?: string }) {
+type WidgetBusiness = {
+  id: string;
+  name: string;
+  greeting: string;
+  phone: string;
+};
+
+export default function ChatWidget({ business }: { business: WidgetBusiness }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -15,9 +21,6 @@ export default function ChatWidget({ businessId }: { businessId?: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open, loading]);
-
-  const business = getBusiness(businessId);
-  if (!business) return null;
 
   const fallback = `Sorry, something went wrong. Please call us at ${business.phone}.`;
 
