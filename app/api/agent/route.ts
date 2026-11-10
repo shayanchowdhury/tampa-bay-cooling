@@ -226,16 +226,16 @@ export async function POST(request: Request) {
     const tools = buildTools(business);
 
     try {
-        const history: Anthropic.MessageParam[] = messages;
+        let convo: Anthropic.MessageParam[] = messages;
         let response = await client.messages.create({
             model: MODEL,
-            max_tokens: 300,
+            max_tokens: 400,
             system,
             tools,
-            messages: history,
+            messages: convo,
         });
 
-        if (response.stop_reason === "tool_use") {
+        for (let round = 0; round < 4 && response.stop_reason === "tool_use"; round++) {
             const toolUses = response.content.filter(
                 (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
             );
@@ -246,20 +246,24 @@ export async function POST(request: Request) {
                 else if (tu.name === "book_appointment") output = await saveBooking(tu.input, business);
                 results.push({ type: "tool_result", tool_use_id: tu.id, content: output });
             }
+            convo = [
+                ...convo,
+                { role: "assistant", content: response.content },
+                { role: "user", content: results },
+            ];
             response = await client.messages.create({
                 model: MODEL,
-                max_tokens: 300,
+                max_tokens: 400,
                 system,
                 tools,
-                messages: [
-                    ...history,
-                    { role: "assistant", content: response.content },
-                    { role: "user", content: results },
-                ],
+                messages: convo,
             });
         }
 
-        const reply = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+        const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("").trim();
+        const reply =
+            text ||
+            `Thanks! We have your request and will follow up shortly. You can also call us at ${business.phone}.`;
         return NextResponse.json({ reply });
     } catch (error) {
         console.error("Agent error:", error instanceof Error ? error.message : "unknown");
