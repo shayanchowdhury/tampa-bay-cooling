@@ -11,6 +11,7 @@ export default function StartForm() {
   const [phone, setPhone] = useState("");
   const [hours, setHours] = useState("");
   const [services, setServices] = useState("");
+  const [notes, setNotes] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,7 @@ export default function StartForm() {
           phone,
           hours,
           services,
+          notes,
           notifyEmail,
           website,
         }),
@@ -159,6 +161,19 @@ export default function StartForm() {
           placeholder="Leak repair, Water heaters, Drain cleaning"
           maxLength={300}
           required
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-semibold">
+          Anything customers should know? (optional)
+        </label>
+        <textarea
+          className={inputClass}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Service area, price ranges, emergency policy, licensed and insured..."
+          rows={4}
+          maxLength={600}
         />
       </div>
       <div>

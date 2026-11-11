@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     const phone = clean(body.phone, 30);
     const hours = clean(body.hours, 120);
     const services = clean(body.services, 300);
+    const notes = clean(body.notes, 600);
     const notifyEmail = clean(body.notifyEmail, 120);
 
     if (!name || !city || !phone || !services || !notifyEmail.includes("@")) {
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
       hours: hours || "Mon-Fri 8am-5pm",
       services,
       greeting: `Hi! Thanks for reaching out to ${name}. How can I help you today?`,
-      notes: "",
+      notes,
       notify_email: notifyEmail,
       demo: true,
     });
