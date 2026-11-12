@@ -1,5 +1,9 @@
 import Link from "next/link";
 import InquiryForm from "../components/InquiryForm";
+import ChatWidget from "../components/ChatWidget";
+import { getBusinessAsync } from "../../lib/business-store";
+
+export const instant = false;
 
 export const metadata = {
   title: "AI Chat Assistants for Local Service Businesses",
@@ -59,7 +63,8 @@ const tiers = [
   },
 ];
 
-export default function AiChatPage() {
+export default async function AiChatPage() {
+  const demo = await getBusinessAsync("bay-plumbing");
   const mail =
     "mailto:shayanchowdhury05@gmail.com?subject=AI%20chat%20assistant%20for%20my%20business";
 
@@ -91,6 +96,9 @@ export default function AiChatPage() {
             Get one for your business
           </a>
         </div>
+        <p className="mt-4 text-sm text-slate-500">
+          Or just click the Chat button in the bottom right corner and try it on this page.
+        </p>
       </section>
 
       <section className="bg-slate-50 px-6 py-16">
@@ -154,6 +162,17 @@ export default function AiChatPage() {
           </a>
         </p>
       </section>
+
+      {demo && (
+        <ChatWidget
+          business={{
+            id: demo.id,
+            name: demo.name,
+            greeting: demo.greeting,
+            phone: demo.phone,
+          }}
+        />
+      )}
     </main>
   );
 }
