@@ -9,6 +9,8 @@ const client = new Anthropic();
 
 const MODEL = "claude-haiku-5-5";
 
+const OTHER_SERVICE = "Other / not sure";
+
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 8;
 const hits = new Map<string, number[]>();
@@ -22,10 +24,15 @@ function tooManyRequests(ip: string): boolean {
     return recent.length > MAX_PER_WINDOW;
 }
 
+function allowedServices(b: BusinessConfig): string[] {
+    return [...b.services, OTHER_SERVICE];
+}
+
 function buildSystemPrompt(b: BusinessConfig): string {
     return [
         `You are the website assistant for ${b.name}, a ${b.industry} business in ${b.city}.${b.demo ? " This is a demo." : ""}`,
         `Help visitors with questions about these services: ${b.services.join(", ")}.`,
+        `If a request is plausibly part of this trade but doesn't match a listed service exactly (for example a dripping faucet when the list says leak repair), do not turn the visitor away. Use the service "${OTHER_SERVICE}" and describe the request in the message field. Only decline requests that clearly belong to a different trade.`,
         `Business phone: ${b.phone}. ${b.hours}`,
         b.notes,
         "Never invent prices, availability, or promises. If you don't know something, say someone from the team will follow up.",
@@ -49,8 +56,12 @@ function buildTools(b: BusinessConfig): Anthropic.Tool[] {
                 properties: {
                     name: { type: "string" },
                     phone: { type: "string" },
-                    service: { type: "string", enum: b.services },
-                    message: { type: "string", description: "Optional short note about the request." },
+                    service: { type: "string", enum: allowedServices(b) },
+                    message: {
+                        type: "string",
+                        description:
+                            "Short note about the request. Required when service is Other / not sure.",
+                    },
                     score: { type: "string", enum: ["hot", "warm", "cold"] },
                     summary: { type: "string", description: "One sentence describing what the customer needs." },
                 },
@@ -66,12 +77,16 @@ function buildTools(b: BusinessConfig): Anthropic.Tool[] {
                 properties: {
                     name: { type: "string" },
                     phone: { type: "string" },
-                    service: { type: "string", enum: b.services },
+                    service: { type: "string", enum: allowedServices(b) },
                     preferred_time: {
                         type: "string",
                         description: "The day and time the customer wants, in their own words.",
                     },
-                    notes: { type: "string", description: "Optional short note about the visit." },
+                    notes: {
+                        type: "string",
+                        description:
+                            "Short note about the visit. Required when service is Other / not sure.",
+                    },
                 },
                 required: ["name", "phone", "service", "preferred_time"],
             },
@@ -110,7 +125,7 @@ async function saveLead(input: unknown, b: BusinessConfig): Promise<string> {
     const score = ["hot", "warm", "cold"].includes(rawScore) ? rawScore : "warm";
     const summary = typeof data.summary === "string" ? data.summary.trim().slice(0, 300) : "";
 
-    if (!name || !phone || !b.services.includes(service)) {
+    if (!name || !phone || !allowedServices(b).includes(service)) {
         return "Missing or invalid details. Ask the visitor for what is missing.";
     }
 
@@ -150,7 +165,7 @@ async function saveBooking(input: unknown, b: BusinessConfig): Promise<string> {
         typeof data.preferred_time === "string" ? data.preferred_time.trim().slice(0, 100) : "";
     const note = typeof data.notes === "string" ? data.notes.trim().slice(0, 500) : "";
 
-    if (!name || !phone || !preferredTime || !b.services.includes(service)) {
+    if (!name || !phone || !preferredTime || !allowedServices(b).includes(service)) {
         return "Missing or invalid details. Ask the visitor for what is missing.";
     }
 
